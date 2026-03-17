@@ -1477,7 +1477,8 @@ html {
 }
 
 /* ========= Join Section ========= */
-.join-section {
+.join-section,
+.contact-section {
   position: relative;
   padding: 5rem 0 4rem;
   background: linear-gradient(180deg, #f0f7ff 0%, #eefbf3 100%);
@@ -1653,13 +1654,15 @@ html {
 }
 
 .join-form-card {
-  background: white;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-radius: 1.5rem;
   padding: 2.25rem 2rem;
   box-shadow:
-    0 8px 40px rgba(37, 99, 235, 0.08),
-    0 2px 12px rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(37, 99, 235, 0.06);
+    0 8px 40px rgba(37, 99, 235, 0.10),
+    0 2px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.55);
 }
 
 /* Role selection */

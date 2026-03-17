@@ -1,76 +1,148 @@
 "use client";
 
-import { useState } from 'react';
+import { useState } from "react";
+import emailjs from "@emailjs/browser";
 
 export default function EnquiryForm() {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    message: '',
+    name: "",
+    email: "",
+    phone: "",
+    message: "",
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
-    alert('Form submitted!'); // Placeholder
+    setLoading(true);
+
+    try {
+      // Send via EmailJS (existing functionality)
+      const response = await emailjs.send(
+        "service_6bwkkqq",
+        "template_8uh2qea",
+        {
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          message: formData.message || "No message provided",
+        },
+        "H-Fq1Md9KGccWpwwT"
+      );
+
+      console.log("Email sent:", response);
+
+      // Also save to database
+      try {
+        await fetch("/api/submissions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "enquiry",
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            message: formData.message || "No message provided",
+          }),
+        });
+      } catch (dbError) {
+        console.error("DB save error:", dbError);
+      }
+
+      alert("Your enquiry has been sent!");
+
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        message: "",
+      });
+    } catch (error) {
+      console.error("EmailJS error:", error);
+      alert("Something went wrong. Please try again later.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md border border-blue-200">
-      <h3 className="text-xl font-semibold mb-4 text-gray-900">Join the Centre</h3>
-      <div className="mb-4">
-        <label className="block text-gray-700 mb-2">Name</label>
+    <form onSubmit={handleSubmit} className="join-form-card">
+      <h3
+        style={{
+          fontSize: "1.25rem",
+          fontWeight: 700,
+          color: "#1e293b",
+          marginBottom: "1.25rem",
+        }}
+      >
+        Send Us a Message
+      </h3>
+
+      <div className="join-floating-group">
+        <i className="fas fa-user join-input-icon" />
         <input
           type="text"
           name="name"
           value={formData.name}
           onChange={handleChange}
-          className="w-full p-2 border border-gray-300 rounded bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder=" "
+          className="join-input"
           required
         />
+        <label className="join-floating-label">Name</label>
       </div>
-      <div className="mb-4">
-        <label className="block text-gray-700 mb-2">Email</label>
+
+      <div className="join-floating-group">
+        <i className="fas fa-envelope join-input-icon" />
         <input
           type="email"
           name="email"
           value={formData.email}
           onChange={handleChange}
-          className="w-full p-2 border border-gray-300 rounded bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder=" "
+          className="join-input"
           required
         />
+        <label className="join-floating-label">Email</label>
       </div>
-      <div className="mb-4">
-        <label className="block text-gray-700 mb-2">Phone</label>
+
+      <div className="join-floating-group">
+        <i className="fas fa-phone join-input-icon" />
         <input
           type="tel"
           name="phone"
           value={formData.phone}
           onChange={handleChange}
-          className="w-full p-2 border border-gray-300 rounded bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder=" "
+          className="join-input"
           required
         />
+        <label className="join-floating-label">Phone</label>
       </div>
-      <div className="mb-4">
-        <label className="block text-gray-700 mb-2">Message</label>
+
+      <div className="join-floating-group">
+        <i className="fas fa-comment join-input-icon join-input-icon--textarea" />
         <textarea
           name="message"
           value={formData.message}
           onChange={handleChange}
-          className="w-full p-2 border border-gray-300 rounded bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
           rows={4}
+          placeholder=" "
+          className="join-input join-textarea"
         />
+        <label className="join-floating-label">Message</label>
       </div>
-      <button
-        type="submit"
-        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-      >
-        Submit Enquiry
+
+      <button type="submit" className="join-submit-btn" disabled={loading}>
+        <span>{loading ? "Sending..." : "Submit Enquiry"}</span>
+        {!loading && <i className="fas fa-paper-plane join-submit-icon" />}
       </button>
     </form>
   );

@@ -1,4 +1,11 @@
-import { Bulletin } from '@/data/bulletins';
+interface Bulletin {
+  _id?: string;
+  id?: string;
+  title: string;
+  description: string;
+  date: string;
+  isNew: boolean;
+}
 
 interface BulletinCardProps {
   bulletin: Bulletin;

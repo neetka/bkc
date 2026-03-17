@@ -1,8 +1,37 @@
 "use client";
 
-import { services } from "@/data/services";
+import { useState, useEffect } from "react";
+import { services as staticServices } from "@/data/services";
+
+interface Service {
+    _id?: string;
+    id?: string;
+    title: string;
+    description: string;
+    icon: string;
+    category: string;
+    order?: number;
+}
 
 export default function ServicesGrid() {
+    const [services, setServices] = useState<Service[]>(staticServices);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetch("/api/services")
+            .then((res) => res.json())
+            .then((data) => {
+                if (Array.isArray(data) && data.length > 0) {
+                    setServices(data);
+                }
+                // If API returns empty or error, keep static data
+            })
+            .catch(() => {
+                // Keep static data on API failure
+            })
+            .finally(() => setLoading(false));
+    }, []);
+
     return (
         <section id="services" className="services-section">
             <div className="container mx-auto px-4">
@@ -17,7 +46,7 @@ export default function ServicesGrid() {
                 <div className="services-grid">
                     {services.map((service, i) => (
                         <div
-                            key={service.id}
+                            key={service._id || service.id || i}
                             className="service-card scroll-reveal"
                             style={{ transitionDelay: `${i * 0.08}s` }}
                         >

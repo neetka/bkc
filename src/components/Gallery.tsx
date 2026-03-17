@@ -1,8 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-const galleryImages = [
+interface GalleryImageData {
+    _id?: string;
+    src: string;
+    alt: string;
+    caption: string;
+}
+
+const staticGalleryImages: GalleryImageData[] = [
     { src: "/images/gallery-1.png", alt: "Computer Training Lab", caption: "Our Computer Training Lab" },
     { src: "/images/gallery-2.png", alt: "Service Desk", caption: "Service Desk" },
     { src: "/images/gallery-3.png", alt: "Digital Services Center", caption: "Digital Services" },
@@ -10,7 +17,22 @@ const galleryImages = [
 ];
 
 export default function Gallery() {
+    const [galleryImages, setGalleryImages] = useState<GalleryImageData[]>(staticGalleryImages);
     const [lightbox, setLightbox] = useState<number | null>(null);
+
+    useEffect(() => {
+        fetch("/api/gallery")
+            .then((res) => res.json())
+            .then((data) => {
+                if (Array.isArray(data) && data.length > 0) {
+                    setGalleryImages(data);
+                }
+                // If API fails or returns empty, keep static images
+            })
+            .catch(() => {
+                // Keep static data on API failure
+            });
+    }, []);
 
     const openLightbox = (index: number) => setLightbox(index);
     const closeLightbox = () => setLightbox(null);
@@ -30,7 +52,7 @@ export default function Gallery() {
                 <div className="gallery-grid">
                     {galleryImages.map((img, i) => (
                         <div
-                            key={i}
+                            key={img._id || i}
                             className="gallery-item scroll-reveal"
                             onClick={() => openLightbox(i)}
                         >
