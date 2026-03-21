@@ -4,6 +4,25 @@ import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/mongodb';
 import Admin from '@/models/Admin';
 
+declare module 'next-auth' {
+  interface User {
+    role: string;
+  }
+  interface Session {
+    user: {
+      id: string;
+      name: string;
+      role: string;
+    };
+  }
+}
+
+declare module 'next-auth/jwt' {
+  interface JWT {
+    role: string;
+  }
+}
+
 const handler = NextAuth({
   providers: [
     CredentialsProvider({
@@ -29,7 +48,7 @@ const handler = NextAuth({
           return null;
         }
 
-        return { id: admin._id.toString(), name: admin.username };
+        return { id: admin._id.toString(), name: admin.username, role: 'admin' };
       },
     }),
   ],
@@ -43,12 +62,14 @@ const handler = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.role = user.role;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as { id?: string }).id = token.id as string;
+        (session.user as { id?: string; role?: string }).id = token.id as string;
+        (session.user as { id?: string; role?: string }).role = token.role as string;
       }
       return session;
     },

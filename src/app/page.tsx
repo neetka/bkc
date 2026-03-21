@@ -30,23 +30,37 @@ interface Bulletin {
 export default function Home() {
   const [loading, setLoading] = useState(true);
   const [bulletins, setBulletins] = useState<Bulletin[]>(staticBulletins);
+  const [bulletinError, setBulletinError] = useState<string | null>(null);
+  const [bulletinLoading, setBulletinLoading] = useState(true);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setLoading(false);
     }, 1500);
 
-    // Fetch bulletins from API — fall back to static data if unavailable
+    // Fetch bulletins from API — show error if unavailable
+    setBulletinLoading(true);
     fetch('/api/bulletins')
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        return res.json();
+      })
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
           setBulletins(data);
+          console.log(`✅ Loaded ${data.length} bulletins from API`);
+        } else {
+          console.warn('⚠️ API returned empty bulletins array, using static data');
+          setBulletinError('No bulletin data available from server');
         }
       })
-      .catch(() => {
-        // Keep static bulletins on API failure
-      });
+      .catch((error) => {
+        console.error('❌ Failed to fetch bulletins:', error);
+        setBulletinError('Unable to load latest updates. Showing cached data.');
+      })
+      .finally(() => setBulletinLoading(false));
 
     return () => clearTimeout(timer);
   }, []);
@@ -82,13 +96,25 @@ export default function Home() {
       <section id="bulletin" className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl font-bold text-center mb-8 scroll-reveal">Latest Updates</h2>
-          <div className="max-w-4xl mx-auto bulletin-grid">
-            {bulletins.map((bulletin, i) => (
-              <div key={bulletin._id || bulletin.id || i} className="scroll-reveal" style={{ transitionDelay: `${i * 0.1}s` }}>
-                <BulletinCard bulletin={bulletin} />
-              </div>
-            ))}
-          </div>
+          {bulletinError && (
+            <p className="text-center text-amber-600 mb-4 text-sm">
+              ⚠️ {bulletinError}
+            </p>
+          )}
+          {bulletinLoading ? (
+            <div className="flex justify-center items-center py-8">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+              <span className="ml-2 text-gray-600">Loading updates...</span>
+            </div>
+          ) : (
+            <div className="max-w-4xl mx-auto bulletin-grid">
+              {bulletins.map((bulletin, i) => (
+                <div key={bulletin._id || bulletin.id || i} className="scroll-reveal" style={{ transitionDelay: `${i * 0.1}s` }}>
+                  <BulletinCard bulletin={bulletin} />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

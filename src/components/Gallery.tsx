@@ -18,20 +18,32 @@ const staticGalleryImages: GalleryImageData[] = [
 
 export default function Gallery() {
     const [galleryImages, setGalleryImages] = useState<GalleryImageData[]>(staticGalleryImages);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [lightbox, setLightbox] = useState<number | null>(null);
 
     useEffect(() => {
         fetch("/api/gallery")
-            .then((res) => res.json())
+            .then((res) => {
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+            })
             .then((data) => {
                 if (Array.isArray(data) && data.length > 0) {
                     setGalleryImages(data);
+                    console.log(`✅ Loaded ${data.length} gallery images from API`);
+                } else {
+                    console.warn('⚠️ API returned empty gallery array, using static images');
+                    setError('No gallery images available from server');
                 }
-                // If API fails or returns empty, keep static images
             })
-            .catch(() => {
-                // Keep static data on API failure
-            });
+            .catch((error) => {
+                console.error('❌ Failed to fetch gallery images:', error);
+                setError('Unable to load gallery images. Showing cached images.');
+            })
+            .finally(() => setLoading(false));
     }, []);
 
     const openLightbox = (index: number) => setLightbox(index);
@@ -49,45 +61,74 @@ export default function Gallery() {
                 <h2 className="text-3xl font-bold text-center mb-12 text-gray-800">
                     Our Centre Gallery
                 </h2>
-                <div className="gallery-grid">
-                    {galleryImages.map((img, i) => (
-                        <div
-                            key={img._id || i}
-                            className="gallery-item scroll-reveal"
-                            onClick={() => openLightbox(i)}
-                        >
-                            <img src={img.src} alt={img.alt} loading="lazy" />
-                            <div className="gallery-item__overlay">
-                                <span className="gallery-item__caption">{img.caption}</span>
-                                <i className="fas fa-search-plus gallery-item__icon"></i>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
+                {error && (
+                    <p className="text-center text-amber-600 mb-4 text-sm">
+                        ⚠️ {error}
+                    </p>
+                )}
 
-            {/* Lightbox */}
-            {lightbox !== null && (
-                <div className="lightbox" onClick={closeLightbox}>
-                    <div className="lightbox__content" onClick={(e) => e.stopPropagation()}>
-                        <button className="lightbox__close" onClick={closeLightbox} aria-label="Close">
-                            <i className="fas fa-times"></i>
-                        </button>
-                        <button className="lightbox__nav lightbox__nav--prev" onClick={goPrev} aria-label="Previous">
-                            <i className="fas fa-chevron-left"></i>
-                        </button>
-                        <img
-                            src={galleryImages[lightbox].src}
-                            alt={galleryImages[lightbox].alt}
-                            className="lightbox__image"
-                        />
-                        <p className="lightbox__caption">{galleryImages[lightbox].caption}</p>
-                        <button className="lightbox__nav lightbox__nav--next" onClick={goNext} aria-label="Next">
-                            <i className="fas fa-chevron-right"></i>
-                        </button>
+                {loading ? (
+                    <div className="flex justify-center items-center py-12">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                        <span className="ml-2 text-gray-600">Loading gallery...</span>
                     </div>
-                </div>
-            )}
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {galleryImages.map((image, index) => (
+                            <div
+                                key={image._id || index}
+                                className="gallery-item cursor-pointer transform hover:scale-105 transition-transform duration-300"
+                                onClick={() => openLightbox(index)}
+                            >
+                                <img
+                                    src={image.src}
+                                    alt={image.alt}
+                                    className="w-full h-48 object-cover rounded-lg shadow-md"
+                                    loading="lazy"
+                                />
+                                <div className="mt-2">
+                                    <p className="text-sm text-gray-600 text-center">{image.caption}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* Lightbox */}
+                {lightbox !== null && (
+                    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" onClick={closeLightbox}>
+                        <div className="relative max-w-4xl max-h-full p-4">
+                            <img
+                                src={galleryImages[lightbox].src}
+                                alt={galleryImages[lightbox].alt}
+                                className="max-w-full max-h-full object-contain"
+                            />
+                            <button
+                                className="absolute top-2 right-2 text-white text-2xl bg-black bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center"
+                                onClick={closeLightbox}
+                            >
+                                ×
+                            </button>
+                            {galleryImages.length > 1 && (
+                                <>
+                                    <button
+                                        className="absolute left-2 top-1/2 transform -translate-y-1/2 text-white text-2xl bg-black bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center"
+                                        onClick={goPrev}
+                                    >
+                                        ‹
+                                    </button>
+                                    <button
+                                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-white text-2xl bg-black bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center"
+                                        onClick={goNext}
+                                    >
+                                        ›
+                                    </button>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
         </section>
     );
 }

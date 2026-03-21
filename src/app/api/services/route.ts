@@ -21,6 +21,12 @@ export async function POST(request: NextRequest) {
   try {
     await dbConnect();
     const body = await request.json();
+
+    // Validate required fields
+    if (!body.title || !body.description) {
+      return NextResponse.json({ error: 'Title and description are required' }, { status: 400 });
+    }
+
     const count = await Service.countDocuments();
     const service = await Service.create({ ...body, order: count });
     return NextResponse.json(service, { status: 201 });
