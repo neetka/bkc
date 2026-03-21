@@ -51,10 +51,16 @@ export default function ServicesManager() {
   const fetchServices = useCallback(async () => {
     try {
       const res = await fetch("/api/services");
+      console.log("[FRONTEND] GET /api/services — status:", res.status);
       const data = await res.json();
+      console.log("[FRONTEND] Services data:", data);
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to fetch services");
+      }
       setServices(data);
-    } catch {
-      showToast("Failed to fetch services", "error");
+    } catch (error) {
+      console.error("[FRONTEND] ❌ Error fetching services:", error);
+      showToast(error instanceof Error ? error.message : "Failed to fetch services", "error");
     } finally {
       setLoading(false);
     }
@@ -88,36 +94,53 @@ export default function ServicesManager() {
     }
 
     try {
-      if (editing) {
-        await fetch(`/api/services/${editing._id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
-        });
-        showToast("Service updated!");
-      } else {
-        await fetch("/api/services", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
-        });
-        showToast("Service created!");
+      console.log("[FRONTEND] Saving service — editing:", !!editing, "form:", form);
+      const res = editing
+        ? await fetch(`/api/services/${editing._id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(form),
+          })
+        : await fetch("/api/services", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(form),
+          });
+
+      console.log("[FRONTEND] Save service response status:", res.status);
+      const responseData = await res.json();
+      console.log("[FRONTEND] Save service response body:", responseData);
+
+      if (!res.ok) {
+        throw new Error(responseData.message || responseData.error || "Failed to save service");
       }
+
+      showToast(editing ? "Service updated!" : "Service created!");
       setShowModal(false);
       fetchServices();
-    } catch {
-      showToast("Failed to save service", "error");
+    } catch (error) {
+      console.error("[FRONTEND] ❌ Error saving service:", error);
+      showToast(error instanceof Error ? error.message : "Failed to save service", "error");
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this service?")) return;
     try {
-      await fetch(`/api/services/${id}`, { method: "DELETE" });
+      console.log("[FRONTEND] Deleting service ID:", id);
+      const res = await fetch(`/api/services/${id}`, { method: "DELETE" });
+      console.log("[FRONTEND] Delete service response status:", res.status);
+      const responseData = await res.json();
+      console.log("[FRONTEND] Delete service response body:", responseData);
+
+      if (!res.ok) {
+        throw new Error(responseData.message || responseData.error || "Failed to delete service");
+      }
       showToast("Service deleted!");
       fetchServices();
-    } catch {
-      showToast("Failed to delete service", "error");
+    } catch (error) {
+      console.error("[FRONTEND] ❌ Error deleting service:", error);
+      showToast(error instanceof Error ? error.message : "Failed to delete service", "error");
     }
   };
 
@@ -129,13 +152,17 @@ export default function ServicesManager() {
     setServices(newServices);
 
     try {
-      await fetch("/api/services/reorder", {
+      const res = await fetch("/api/services/reorder", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderedIds: newServices.map((s) => s._id) }),
       });
-    } catch {
-      showToast("Failed to reorder", "error");
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || errorData.error || "Failed to reorder");
+      }
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Failed to reorder", "error");
       fetchServices();
     }
   };

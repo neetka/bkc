@@ -31,10 +31,16 @@ export default function UpdatesManager() {
   const fetchBulletins = useCallback(async () => {
     try {
       const res = await fetch("/api/bulletins");
+      console.log("[FRONTEND] GET /api/bulletins — status:", res.status);
       const data = await res.json();
+      console.log("[FRONTEND] Bulletins data:", data);
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to fetch updates");
+      }
       setBulletins(data);
-    } catch {
-      showToast("Failed to fetch updates", "error");
+    } catch (error) {
+      console.error("[FRONTEND] ❌ Error fetching bulletins:", error);
+      showToast(error instanceof Error ? error.message : "Failed to fetch updates", "error");
     } finally {
       setLoading(false);
     }
@@ -68,49 +74,75 @@ export default function UpdatesManager() {
     }
 
     try {
-      if (editing) {
-        await fetch(`/api/bulletins/${editing._id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
-        });
-        showToast("Update modified!");
-      } else {
-        await fetch("/api/bulletins", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
-        });
-        showToast("Update created!");
+      console.log("[FRONTEND] Saving bulletin — editing:", !!editing, "form:", form);
+      const res = editing
+        ? await fetch(`/api/bulletins/${editing._id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(form),
+          })
+        : await fetch("/api/bulletins", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(form),
+          });
+
+      console.log("[FRONTEND] Save bulletin response status:", res.status);
+      const responseData = await res.json();
+      console.log("[FRONTEND] Save bulletin response body:", responseData);
+
+      if (!res.ok) {
+        throw new Error(responseData.message || responseData.error || "Failed to save update");
       }
+
+      showToast(editing ? "Update modified!" : "Update created!");
       setShowModal(false);
       fetchBulletins();
-    } catch {
-      showToast("Failed to save update", "error");
+    } catch (error) {
+      console.error("[FRONTEND] ❌ Error saving bulletin:", error);
+      showToast(error instanceof Error ? error.message : "Failed to save update", "error");
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this update?")) return;
     try {
-      await fetch(`/api/bulletins/${id}`, { method: "DELETE" });
+      console.log("[FRONTEND] Deleting bulletin ID:", id);
+      const res = await fetch(`/api/bulletins/${id}`, { method: "DELETE" });
+      console.log("[FRONTEND] Delete bulletin response status:", res.status);
+      const responseData = await res.json();
+      console.log("[FRONTEND] Delete bulletin response body:", responseData);
+
+      if (!res.ok) {
+        throw new Error(responseData.message || responseData.error || "Failed to delete update");
+      }
       showToast("Update deleted!");
       fetchBulletins();
-    } catch {
-      showToast("Failed to delete update", "error");
+    } catch (error) {
+      console.error("[FRONTEND] ❌ Error deleting bulletin:", error);
+      showToast(error instanceof Error ? error.message : "Failed to delete update", "error");
     }
   };
 
   const toggleNew = async (bulletin: Bulletin) => {
     try {
-      await fetch(`/api/bulletins/${bulletin._id}`, {
+      console.log("[FRONTEND] Toggling NEW badge for bulletin:", bulletin._id);
+      const res = await fetch(`/api/bulletins/${bulletin._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...bulletin, isNew: !bulletin.isNew }),
       });
+      console.log("[FRONTEND] Toggle NEW response status:", res.status);
+      const responseData = await res.json();
+      console.log("[FRONTEND] Toggle NEW response body:", responseData);
+
+      if (!res.ok) {
+        throw new Error(responseData.message || responseData.error || "Failed to toggle badge");
+      }
       fetchBulletins();
-    } catch {
-      showToast("Failed to toggle badge", "error");
+    } catch (error) {
+      console.error("[FRONTEND] ❌ Error toggling badge:", error);
+      showToast(error instanceof Error ? error.message : "Failed to toggle badge", "error");
     }
   };
 
