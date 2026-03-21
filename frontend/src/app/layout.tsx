@@ -6,7 +6,8 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Common Services Centre Baghpur",
-  description: "Rural public service and computer training centre providing government services and computer training",
+  description:
+    "Rural public service and computer training centre providing government services and computer training",
   icons: {
     icon: "/logo.png",
   },
@@ -19,9 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        {children}
-      </body>
+      <body className={inter.className}>{children}</body>
     </html>
   );
 }
