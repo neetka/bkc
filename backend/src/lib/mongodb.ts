@@ -1,6 +1,4 @@
-import mongoose from 'mongoose';
-
-const MONGODB_URI = process.env.MONGODB_URI || '';
+import mongoose from "mongoose";
 
 interface MongooseCache {
   conn: typeof mongoose | null;
@@ -10,8 +8,10 @@ interface MongooseCache {
 const cached: MongooseCache = { conn: null, promise: null };
 
 async function dbConnect(): Promise<typeof mongoose> {
-  if (!MONGODB_URI) {
-    throw new Error('MONGODB_URI is not configured. Set it in .env file.');
+  const mongodbUri = process.env.MONGODB_URI || "";
+
+  if (!mongodbUri) {
+    throw new Error("MONGODB_URI is not configured. Set it in .env file.");
   }
 
   if (cached.conn) {
@@ -23,8 +23,8 @@ async function dbConnect(): Promise<typeof mongoose> {
     return cached.conn;
   }
 
-  console.log('[MongoDB] Connecting...');
-  cached.promise = mongoose.connect(MONGODB_URI, {
+  console.log("[MongoDB] Connecting...");
+  cached.promise = mongoose.connect(mongodbUri, {
     maxPoolSize: 10,
     serverSelectionTimeoutMS: 10000,
     socketTimeoutMS: 45000,
@@ -33,7 +33,7 @@ async function dbConnect(): Promise<typeof mongoose> {
 
   try {
     cached.conn = await cached.promise;
-    console.log('[MongoDB] Connected successfully');
+    console.log("[MongoDB] Connected successfully");
     return cached.conn;
   } catch (error) {
     cached.promise = null;
